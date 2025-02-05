@@ -1,90 +1,84 @@
-# Roblox Account Monitor
+# Roblox Account Manager Discord Bot
 
-A Discord bot that monitors multiple Roblox accounts for bans, unbans, and authorization issues in real-time.
+A Discord bot for managing and monitoring Roblox accounts, with features for tracking ban status and handling appeals.
 
 ## Features
-- Monitor multiple Roblox accounts simultaneously
-- Real-time ban/unban notifications
-- Account credential validation
-- Discord commands for account management
-- Secure token handling
 
-## Prerequisites
-- Python 3.8+
-- Discord Bot Token
-- Roblox Account Credentials
+- **Account Management**
+  - Add/remove Roblox accounts
+  - Monitor multiple accounts simultaneously
+  - Validate account credentials
+  - List all registered accounts with status
 
-## Installation
+- **Ban Monitoring**
+  - Real-time ban detection
+  - Detailed ban information including:
+    - Ban duration
+    - Ban end date
+    - Game/place where ban occurred
+    - Ban reason
+  - Appeal system integration
+  - Public ban status checking
+
+- **Commands**
+  - `!add_account <username> <token>` - Add a Roblox account
+  - `!remove_account <username>` - Remove an account
+  - `!list_accounts` - Show all registered accounts with status
+  - `!validate` - Validate all account credentials
+  - `!checkban <username>` (aliases: `!bancheck`, `!checkstatus`) - Check ban status for any Roblox user
+  - `!restart` - Restart the bot (Admin only)
+
+## Setup
 
 1. Clone the repository
-```bash
-git clone https://github.com/yourusername/roblox-account-monitor.git
-cd roblox-account-monitor
-```
+2. Install requirements:
+       bash
+        pip install -r requirements.txt
 
-2. Install dependencies
-```bash
-pip install -r requirements.txt
-```
+3. Configure `config.json`:
+       json
+            {
+                "discord_bot_token": "YOUR_DISCORD_BOT_TOKEN",
+                "log_channel_id": YOUR_LOG_CHANNEL_ID,
+                "appeal_url": "YOUR_APPEAL_FORM_URL",
+                "mod_role_id": YOUR_MOD_ROLE_ID,
+                "private_ban_checks": false
+            }
+4. Configure `.env`:
+       env
+        ROBLOX_USERNAME=main_account_username
+        ROBLOX_API_TOKEN=main_account_token
 
-3. Configure your environment
+## Configuration Options
 
-Create a `.env` file in the root directory:
-```env
-# Main Roblox Account
-ROBLOX_TOKEN=your_main_account_token
-ROBLOX_USERNAME=your_main_account_username
+- `discord_bot_token`: Your Discord bot token
+- `log_channel_id`: Channel ID for bot notifications
+- `appeal_url`: URL to your ban appeal form (optional)
+- `mod_role_id`: Role ID for moderators who handle appeals
+- `private_ban_checks`: Send ban check results via DM if true
 
-# Additional Accounts (Optional)
-ROBLOX_ACCOUNT_username1=token1
-ROBLOX_ACCOUNT_username2=token2
-```
+## Security Features
 
-Create a `config.json` file:
-```json
-{
-    "discord_bot_token": "your_discord_bot_token",
-    "log_channel_id": your_discord_channel_id
-}
-```
+- Automatic token validation
+- Secure credential storage
+- Message deletion for sensitive commands
+- Permission-based command access
 
-## Usage
+## Error Handling
 
-Start the bot:
-```bash
-python main.py
-```
+- DNS resolution checks
+- Connection timeout handling
+- Detailed error logging
+- User-friendly error messages
 
-# Make sure that you have the intents enabled in the discord developer portal
-# WHEN ENTERING TOKEN MAKE SURE TO REMOVE EVERYTHING BEFORE THE TOKEN
+## Requirements
 
-### Discord Commands
-- `!list_accounts` - Show all monitored accounts
-- `!add_account <username> <token>` - Add a new account to monitor
-- `!remove_account <username>` - Remove an account from monitoring
-- `!validate` - Check all account credentials
-- `!restart` - Restart the bot (Admin only)
-
-## Security
-- Tokens are stored securely in .env file
-- Messages containing tokens are automatically deleted
-- Token validation before adding accounts
-- Admin-only commands for sensitive operations
-
-## Contributing
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- Python 3.8+
+- discord.py
+- aiohttp
+- python-dotenv
+- Additional requirements in `requirements.txt`
 
 ## License
-This project is licensed under the  GNU GENERAL PUBLIC LICENSE License
 
-## Acknowledgments
-- Discord.py library
-- Roblox API documentation
-- Python-dotenv
-
-## Support
-For support, please open an issue in the GitHub repository.
+UNDER THE GNU LICENSE
