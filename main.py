@@ -46,7 +46,6 @@ async def monitor_accounts():
     async with aiohttp.ClientSession() as session:
         for username, token in accounts.items():
             try:
-                # Get user info
                 headers = {
                     "Authorization": f"Bearer {token}",
                     "Accept": "application/json"
@@ -81,7 +80,7 @@ async def monitor_accounts():
                             
                         user_id = users[0]["id"]
                         
-                        # Check moderation status
+                        # Check moderation status with detailed ban info
                         async with session.get(
                             f"https://users.roblox.com/v1/users/{user_id}",
                             headers=headers
@@ -91,16 +90,54 @@ async def monitor_accounts():
                                 mod_data = await mod_response.json()
                                 is_banned = mod_data.get("isBanned", False)
                                 
-                                embed = discord.Embed(
-                                    title="Account Status",
-                                    description=f"Account: {username}",
-                                    color=discord.Color.red() if is_banned else discord.Color.green()
-                                )
-                                embed.add_field(
-                                    name="Status", 
-                                    value="Banned" if is_banned else "Active"
-                                )
-                                await channel.send(embed=embed)
+                                if is_banned:
+                                    # Get detailed ban information
+                                    async with session.get(
+                                        f"https://accountsettings.roblox.com/v1/users/{user_id}/ban-status",
+                                        headers=headers
+                                    ) as ban_response:
+                                        if ban_response.status == 200:
+                                            ban_data = await ban_response.json()
+                                            
+                                            embed = discord.Embed(
+                                                title="Got banned!",
+                                                description=f"Account: {username}",
+                                                color=discord.Color.red()
+                                            )
+                                            
+                                            # Add ban details
+                                            if "banEndDate" in ban_data:
+                                                embed.add_field(
+                                                    name="Ban Length",
+                                                    value=ban_data.get("banDuration", "Unknown"),
+                                                    inline=True
+                                                )
+                                                embed.add_field(
+                                                    name="Ban Ends",
+                                                    value=ban_data.get("banEndDate", "Unknown"),
+                                                    inline=True
+                                                )
+                                            
+                                            # Add game/place info if available
+                                            if "bannedFromPlace" in ban_data and ban_data["bannedFromPlace"]:
+                                                embed.add_field(
+                                                    name="Banned From",
+                                                    value=f"Place ID: {ban_data['bannedFromPlace']}",
+                                                    inline=False
+                                                )
+                                            
+                                            # Add reason if available
+                                            if "reasonText" in ban_data:
+                                                embed.add_field(
+                                                    name="Reason",
+                                                    value=ban_data.get("reasonText", "No reason provided"),
+                                                    inline=False
+                                                )
+                                            
+                                            await channel.send(embed=embed)
+                                else:
+                                    # Account is not banned, you might want to log this or handle differently
+                                    pass
                             else:
                                 logging.error(f"Error checking moderation status for {username}: {mod_response.status}")
                     
