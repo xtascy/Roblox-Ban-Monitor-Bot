@@ -169,7 +169,7 @@ async def on_ready():
         print(f"• Alt: {username}")
     
     print("\nAvailable Commands:")
-    print("!help           - Show help message")
+    print("!panel_help           - Show help message")
     print("!list_accounts  - Show all monitored accounts")
     print("!add_account    - Add a new account")
     print("!remove_account - Remove an account")
@@ -183,8 +183,8 @@ async def on_ready():
     ))
     monitor_accounts.start()
 
-@bot.command(name='help')
-async def help_command(ctx):
+@bot.command(name='panel_help')
+async def panel_help_command(ctx):
     """Show help information"""
     embed = discord.Embed(
         title="Account Panel Help",
@@ -193,7 +193,7 @@ async def help_command(ctx):
     )
     
     commands = {
-        "!help": "Show this help message",
+        "!panel_help": "Show this help message",
         "!list_accounts": "Show all monitored accounts",
         "!add_account": "Add a new account\nUsage: !add_account username token",
         "!remove_account": "Remove an account\nUsage: !remove_account username",
