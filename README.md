@@ -36,18 +36,34 @@ A Discord bot for managing and monitoring Roblox accounts, with features for tra
         pip install -r requirements.txt
 
 3. Configure `config.json`:
-       json
-            {
-                "discord_bot_token": "YOUR_DISCORD_BOT_TOKEN",
-                "log_channel_id": YOUR_LOG_CHANNEL_ID,
-                "appeal_url": "YOUR_APPEAL_FORM_URL",
-                "mod_role_id": YOUR_MOD_ROLE_ID,
-                "private_ban_checks": false
-            }
-4. Configure `.env`:
-       env
-        ROBLOX_USERNAME=main_account_username
-        ROBLOX_API_TOKEN=main_account_token
+
+
+```json
+{
+  "discord_bot_token": "YOUR_DISCORD_BOT_TOKEN",
+  "log_channel_id": "YOUR_LOG_CHANNEL_ID",
+  "appeal_url": "YOUR_APPEAL_FORM_URL",
+  "mod_role_id": "YOUR_MOD_ROLE_ID",
+  "private_ban_checks": false
+}
+
+```
+Replace YOUR_DISCORD_BOT_TOKEN with your bot's token.
+Replace YOUR_LOG_CHANNEL_ID with the ID of the channel where logs will be posted.
+Replace YOUR_APPEAL_FORM_URL with the URL for the appeal form.
+Replace YOUR_MOD_ROLE_ID with the ID of the moderator role.
+Set private_ban_checks to true if you want to enable private checks for bans, otherwise leave it as false.
+
+
+4. Create or modify the .env file with the following environment variables:
+```.env
+ROBLOX_USERNAME=main_account_username
+ROBLOX_API_TOKEN=main_account_token
+```
+Replace main_account_username with your Roblox account username.
+Replace main_account_token with your Roblox account .ROBOSECURITYTOKEN.
+
+YOUR TOKEN SHOULD ONLY BE NUMBERS. DO NOT INCLUDE ANYTHING BEFORE.
 
 ## Configuration Options
 
