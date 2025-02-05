@@ -1,6 +1,14 @@
 import os
 import json
 import getpass
+import sys
+
+def get_secure_input(prompt):
+    """Safely get sensitive input"""
+    try:
+        return getpass.getpass(prompt)
+    except getpass.GetPassWarning:
+        return input(prompt + " (Warning: input may be visible): ")
 
 def create_config():
     print("\n=== Discord Bot Configuration ===")
@@ -12,7 +20,7 @@ def create_config():
     print("   - Create a New Application")
     print("   - Go to Bot section and create a bot")
     print("   - Copy the bot token")
-    token = getpass.getpass("Enter your Discord bot token: ")
+    token = input("Enter your Discord bot token: ")
     
     print("\n2. Discord Channel Setup:")
     print("   - Right-click the channel you want to use for logs")
@@ -38,7 +46,7 @@ def create_env():
     print("   - Go to Application > Cookies > .ROBLOSECURITY")
     print("   - Copy the cookie value")
     
-    main_token = getpass.getpass("Enter your main account's .ROBLOSECURITY token: ")
+    main_token = input("Enter your main account's .ROBLOSECURITY token: ")
     main_username = input("Enter your main account's username: ")
     
     # Create .env file
@@ -63,7 +71,7 @@ def add_additional_accounts():
             break
             
         username = input("Enter account username: ")
-        token = getpass.getpass("Enter account .ROBLOSECURITY token: ")
+        token = input("Enter account .ROBLOSECURITY token: ")
         
         with open('.env', 'a') as f:
             f.write(f"\nROBLOX_ACCOUNT_{username}={token}")
