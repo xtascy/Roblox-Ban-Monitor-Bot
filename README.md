@@ -27,6 +27,22 @@ A Discord bot for managing and monitoring Roblox accounts, with features for tra
   - `!validate` - Validate all account credentials
   - `!checkban <username>` (aliases: `!bancheck`, `!checkstatus`) - Check ban status for any Roblox user
   - `!restart` - Restart the bot (Admin only)
+  - 
+## Quick Setup
+
+Run the interactive setup script:
+```bash
+python setup.py
+```
+
+This will guide you through:
+1. Discord bot configuration
+2. Main Roblox account setup
+3. Additional accounts (optional)
+4. Creating necessary config files
+
+Or follow the manual setup instructions below:
+[rest of the README remains the same]
 
 ## Setup
 
