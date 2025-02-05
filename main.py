@@ -523,6 +523,109 @@ async def validate(ctx):
         )
         await ctx.send(embed=embed)
 
+@bot.command(aliases=['bancheck', 'checkstatus', 'checkban'])
+async def check_ban(ctx, username: str = None):
+    """Check ban status for a Roblox user"""
+    if not username:
+        embed = discord.Embed(
+            title="❌ Error",
+            description="Please provide a username.\nUsage: `!checkban <username>`",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            # First get user ID
+            async with session.post(
+                "https://users.roblox.com/v1/usernames/users",
+                json={"usernames": [username]}
+            ) as response:
+                if response.status == 200:
+                    user_data = await response.json()
+                    users = user_data["data"]
+                    
+                    if not users:
+                        embed = discord.Embed(
+                            title="User Not Found",
+                            description=f"Could not find user: {username}",
+                            color=discord.Color.red()
+                        )
+                        await ctx.send(embed=embed)
+                        return
+                        
+                    user_id = users[0]["id"]
+                    
+                    # Check moderation status
+                    async with session.get(
+                        f"https://users.roblox.com/v1/users/{user_id}"
+                    ) as mod_response:
+                        if mod_response.status == 200:
+                            mod_data = await mod_response.json()
+                            is_banned = mod_data.get("isBanned", False)
+                            
+                            if is_banned:
+                                embed = discord.Embed(
+                                    title="Ban Status",
+                                    description=f"User: {username}",
+                                    color=discord.Color.red()
+                                )
+                                embed.add_field(
+                                    name="Status",
+                                    value="🚫 Banned",
+                                    inline=False
+                                )
+                                
+                                # Add appeal information if configured
+                                if "appeal_url" in config:
+                                    embed.add_field(
+                                        name="Appeal Information",
+                                        value=f"To appeal this ban, visit: {config['appeal_url']}",
+                                        inline=False
+                                    )
+                                    
+                                    # Notify moderators about potential appeal
+                                    if "mod_role_id" in config:
+                                        mod_role = ctx.guild.get_role(config["mod_role_id"])
+                                        if mod_role:
+                                            appeal_embed = discord.Embed(
+                                                title="Ban Appeal Available",
+                                                description=f"Ban appeal available for {username}. Please review.",
+                                                color=discord.Color.blue()
+                                            )
+                                            await ctx.send(content=mod_role.mention, embed=appeal_embed)
+                            else:
+                                embed = discord.Embed(
+                                    title="Ban Status",
+                                    description=f"User: {username}",
+                                    color=discord.Color.green()
+                                )
+                                embed.add_field(
+                                    name="Status",
+                                    value="✅ Not Banned",
+                                    inline=False
+                                )
+                            
+                            # Send result as DM if configured
+                            if "private_ban_checks" in config and config["private_ban_checks"]:
+                                try:
+                                    await ctx.author.send(embed=embed)
+                                    await ctx.message.add_reaction('✅')
+                                except discord.Forbidden:
+                                    await ctx.send("❌ Could not send DM. Please enable DMs from server members.")
+                            else:
+                                await ctx.send(embed=embed)
+                                
+    except Exception as e:
+        logger.error(f"Error checking ban status: {str(e)}")
+        embed = discord.Embed(
+            title="❌ Error",
+            description="An error occurred while checking ban status.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Roblox Account Manager')
     parser.add_argument('--check', action='store_true', help='Check account status')
