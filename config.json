@@ -1,4 +1,7 @@
 {
     "discord_bot_token": "your_discord_bot_token_here",
     "log_channel_id": 0
+    "appeal_url": "https://your-appeal-form-url.com",
+    "private_ban_checks": false
+    "mod_role_id": 123456789,
 }
