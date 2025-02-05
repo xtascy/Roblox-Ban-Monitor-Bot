@@ -148,6 +148,64 @@ async def monitor_accounts():
 async def on_ready():
     logger.info(f'Bot is ready. Logged in as {bot.user.name}')
     await validate_all_accounts()
+    
+    # Clear screen after validation
+    os.system('cls' if os.name == 'nt' else 'clear')
+    
+    # Show welcome message
+    print("""
+╔════════════════════════════════════════╗
+║         Welcome to Account Panel       ║
+╚════════════════════════════════════════╝
+""")
+    
+    # Show account status
+    roblox_config = Config.get_roblox_config()
+    additional_accounts = Config.get_additional_accounts()
+    
+    print(f"Monitoring {len(additional_accounts) + 1} account(s):")
+    print(f"• Main: {roblox_config['username']}")
+    for username in additional_accounts.keys():
+        print(f"• Alt: {username}")
+    
+    print("\nAvailable Commands:")
+    print("!help           - Show help message")
+    print("!list_accounts  - Show all monitored accounts")
+    print("!add_account    - Add a new account")
+    print("!remove_account - Remove an account")
+    print("!validate       - Check all accounts")
+    print("!bancheck       - Check if a user is banned")
+    print("!restart        - Restart the bot (Admin only)")
+    
+    await bot.change_presence(activity=discord.Activity(
+        type=discord.ActivityType.watching, 
+        name="Roblox accounts"
+    ))
+    monitor_accounts.start()
+
+@bot.command(name='help')
+async def help_command(ctx):
+    """Show help information"""
+    embed = discord.Embed(
+        title="Account Panel Help",
+        description="Available Commands:",
+        color=discord.Color.blue()
+    )
+    
+    commands = {
+        "!help": "Show this help message",
+        "!list_accounts": "Show all monitored accounts",
+        "!add_account": "Add a new account\nUsage: !add_account username token",
+        "!remove_account": "Remove an account\nUsage: !remove_account username",
+        "!validate": "Check all accounts",
+        "!bancheck": "Check if a user is banned\nUsage: !bancheck username",
+        "!restart": "Restart the bot (Admin only)"
+    }
+    
+    for cmd, desc in commands.items():
+        embed.add_field(name=cmd, value=desc, inline=False)
+    
+    await ctx.send(embed=embed)
 
 async def validate_all_accounts():
     """Validate all accounts (main and additional)"""
