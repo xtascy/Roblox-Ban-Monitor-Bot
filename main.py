@@ -158,7 +158,12 @@ class AccountCommands(commands.Cog):
 
         # Check if both parameters are provided
         if not username or not token:
-            await ctx.send("❌ Please provide both username and token.\nUsage: `!add_account <username> <token>`")
+            embed = discord.Embed(
+                title="❌ Error",
+                description="Please provide both username and token.\nUsage: `!add_account <username> <token>`",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
             return
 
         try:
@@ -175,51 +180,125 @@ class AccountCommands(commands.Cog):
                 additional_accounts = Config.get_additional_accounts()
                 additional_accounts[username] = token
                 if Config.save_additional_accounts(additional_accounts):
-                    await ctx.send(f"✅ Successfully added account: {username}")
+                    embed = discord.Embed(
+                        title="✅ Success",
+                        description=f"Successfully added account: {username}",
+                        color=discord.Color.green()
+                    )
+                    await ctx.send(embed=embed)
                     logger.info(f"New account added: {username}")
-                    await list_accounts(ctx)  # Show updated list
+                    await list_accounts(ctx)
                     return
                 else:
-                    await ctx.send("❌ Failed to save account.")
+                    embed = discord.Embed(
+                        title="❌ Error",
+                        description="Failed to save account.",
+                        color=discord.Color.red()
+                    )
+                    await ctx.send(embed=embed)
             else:
-                await ctx.send("❌ Invalid credentials provided. Please check the username and token.")
+                embed = discord.Embed(
+                    title="❌ Error",
+                    description="Invalid credentials provided. Please check the username and token.",
+                    color=discord.Color.red()
+                )
+                await ctx.send(embed=embed)
                 logger.warning(f"Failed to add account - invalid credentials: {username}")
         except Exception as e:
-            logger.error(f"Error adding account: {str(e)}")
-            await ctx.send("❌ An error occurred while adding the account.")
+            embed = discord.Embed(
+                title="❌ Error",
+                description="An error occurred while adding the account.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
 
     @add_account.error
     async def add_account_error(self, ctx, error):
         if isinstance(error, MissingRequiredArgument):
-            await ctx.send(f"❌ Missing required argument: {error.param.name}\nUsage: `!add_account <username> <token>`")
+            embed = discord.Embed(
+                title="❌ Error",
+                description=f"Missing required argument: {error.param.name}\nUsage: `!add_account <username> <token>`",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
 
 @bot.command()
 async def list_accounts(ctx):
-    """List all registered accounts"""
+    """List all registered accounts with ban status"""
     try:
         # Force fresh data
-        Config.save_additional_accounts(Config.get_additional_accounts())  # Refresh env
+        Config.save_additional_accounts(Config.get_additional_accounts())
         roblox_config = Config.get_roblox_config()
         additional_accounts = Config.get_additional_accounts()
         
         logger.info(f"Listing accounts - Main: {roblox_config['username']}, Additional: {len(additional_accounts)}")
         account_list = []
 
-        # Add main account
-        if roblox_config['username'] and roblox_config['token']:
-            is_valid = await validate_credentials(roblox_config['username'], roblox_config['token'])
-            status = "✅" if is_valid else "❌"
-            account_list.append(f"{status} {roblox_config['username']} (Main)")
+        async with aiohttp.ClientSession() as session:
+            # Check main account
+            if roblox_config['username'] and roblox_config['token']:
+                is_valid = await validate_credentials(roblox_config['username'], roblox_config['token'])
+                status = "✅" if is_valid else "❌"
+                
+                # Check ban status if valid
+                ban_status = "Unknown"
+                if is_valid:
+                    headers = {"Authorization": f"Bearer {roblox_config['token']}", "Accept": "application/json"}
+                    async with session.post(
+                        "https://users.roblox.com/v1/usernames/users",
+                        headers=headers,
+                        json={"usernames": [roblox_config['username']]}
+                    ) as response:
+                        if response.status == 200:
+                            user_data = await response.json()
+                            if user_data["data"]:
+                                user_id = user_data["data"][0]["id"]
+                                async with session.get(
+                                    f"https://users.roblox.com/v1/users/{user_id}",
+                                    headers=headers
+                                ) as mod_response:
+                                    if mod_response.status == 200:
+                                        mod_data = await mod_response.json()
+                                        ban_status = "🚫 Banned" if mod_data.get("isBanned", False) else "✅ Active"
+                
+                account_list.append(f"{status} {roblox_config['username']} (Main) - {ban_status}")
 
-        # Add additional accounts
-        for username, token in additional_accounts.items():
-            is_valid = await validate_credentials(username, token)
-            status = "✅" if is_valid else "❌"
-            account_list.append(f"{status} {username}")
+            # Check additional accounts
+            for username, token in additional_accounts.items():
+                is_valid = await validate_credentials(username, token)
+                status = "✅" if is_valid else "❌"
+                
+                # Check ban status if valid
+                ban_status = "Unknown"
+                if is_valid:
+                    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+                    async with session.post(
+                        "https://users.roblox.com/v1/usernames/users",
+                        headers=headers,
+                        json={"usernames": [username]}
+                    ) as response:
+                        if response.status == 200:
+                            user_data = await response.json()
+                            if user_data["data"]:
+                                user_id = user_data["data"][0]["id"]
+                                async with session.get(
+                                    f"https://users.roblox.com/v1/users/{user_id}",
+                                    headers=headers
+                                ) as mod_response:
+                                    if mod_response.status == 200:
+                                        mod_data = await mod_response.json()
+                                        ban_status = "🚫 Banned" if mod_data.get("isBanned", False) else "✅ Active"
+                
+                account_list.append(f"{status} {username} - {ban_status}")
 
         if account_list:
             formatted_list = "\n".join(account_list)
-            await ctx.send(f"**Registered accounts:**\n{formatted_list}")
+            embed = discord.Embed(
+                title="Registered Accounts",
+                description=formatted_list,
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed)
         else:
             await ctx.send("No accounts registered.")
             
@@ -234,7 +313,12 @@ async def remove_account(ctx, username: str = None):
     Usage: !remove_account <username>
     """
     if not username:
-        await ctx.send("❌ Please provide a username.\nUsage: `!remove_account <username>`")
+        embed = discord.Embed(
+            title="❌ Error",
+            description="Please provide a username.\nUsage: `!remove_account <username>`",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
         return
 
     try:
@@ -246,7 +330,12 @@ async def remove_account(ctx, username: str = None):
 
         # Check if trying to remove main account
         if username.lower() == roblox_config['username'].lower():
-            await ctx.send("❌ Cannot remove main account. Update it in the .env file directly.")
+            embed = discord.Embed(
+                title="❌ Error",
+                description="Cannot remove main account. Update it in the .env file directly.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
             return
 
         # Check additional accounts (case-insensitive)
@@ -259,7 +348,12 @@ async def remove_account(ctx, username: str = None):
                 # Save updated accounts
                 if Config.save_additional_accounts(additional_accounts):
                     logger.info("Successfully saved updated accounts")
-                    await ctx.send(f"✅ Successfully removed account: {acc_name}")
+                    embed = discord.Embed(
+                        title="✅ Success",
+                        description=f"Successfully removed account: {acc_name}",
+                        color=discord.Color.green()
+                    )
+                    await ctx.send(embed=embed)
                     
                     # Force reload accounts and show updated list
                     additional_accounts = Config.get_additional_accounts()
@@ -268,23 +362,43 @@ async def remove_account(ctx, username: str = None):
                     return
                 else:
                     logger.error("Failed to save account changes")
-                    await ctx.send("❌ Failed to save account changes.")
+                    embed = discord.Embed(
+                        title="❌ Error",
+                        description="Failed to save account changes.",
+                        color=discord.Color.red()
+                    )
+                    await ctx.send(embed=embed)
                     return
 
         if not account_found:
             logger.warning(f"Account not found: {username}")
-            await ctx.send(f"❌ Account '{username}' not found.")
+            embed = discord.Embed(
+                title="❌ Error",
+                description=f"Account '{username}' not found.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
             
     except Exception as e:
         logger.error(f"Error removing account: {str(e)}")
-        await ctx.send("❌ An error occurred while removing the account.")
+        embed = discord.Embed(
+            title="❌ Error",
+            description="An error occurred while removing the account.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
 
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def restart(ctx):
     """Restart the bot (Admin only)"""
     try:
-        await ctx.send("🔄 Restarting bot...")
+        embed = discord.Embed(
+            title="🔄 Restarting",
+            description="Bot is restarting...",
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=embed)
         logger.info("Bot restart initiated by admin")
         
         # Get the Python executable path and script path
@@ -300,18 +414,33 @@ async def restart(ctx):
         
     except Exception as e:
         logger.error(f"Error during restart: {str(e)}")
-        await ctx.send("❌ Failed to restart bot.")
+        embed = discord.Embed(
+            title="❌ Error",
+            description="Failed to restart bot.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
 
 @restart.error
 async def restart_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
-        await ctx.send("❌ You need administrator permissions to use this command.")
+        embed = discord.Embed(
+            title="❌ Error",
+            description="You need administrator permissions to use this command.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
 
 @bot.command()
 async def validate(ctx):
     """Validate all accounts manually"""
     try:
-        await ctx.send("🔄 Validating all accounts...")
+        embed = discord.Embed(
+            title="🔄 Validation Started",
+            description="Validating all accounts...",
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=embed)
         roblox_config = Config.get_roblox_config()
         additional_accounts = Config.get_additional_accounts()
         
@@ -334,13 +463,28 @@ async def validate(ctx):
         # Send validation results
         if validation_results:
             results = "\n".join(validation_results)
-            await ctx.send(f"**Validation Results:**\n{results}")
+            embed = discord.Embed(
+                title="Validation Results",
+                description=results,
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed)
         else:
-            await ctx.send("No accounts found to validate.")
+            embed = discord.Embed(
+                title="No Accounts",
+                description="No accounts found to validate.",
+                color=discord.Color.yellow()
+            )
+            await ctx.send(embed=embed)
 
     except Exception as e:
         logger.error(f"Error during validation: {str(e)}")
-        await ctx.send("❌ An error occurred during validation.")
+        embed = discord.Embed(
+            title="❌ Error",
+            description="An error occurred during validation.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Roblox Account Manager')
