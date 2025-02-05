@@ -169,7 +169,7 @@ async def on_ready():
         print(f"• Alt: {username}")
     
     print("\nAvailable Commands:")
-    print("!panel_help           - Show help message")
+    print("!panel_help     - Show help message")
     print("!list_accounts  - Show all monitored accounts")
     print("!add_account    - Add a new account")
     print("!remove_account - Remove an account")
@@ -181,7 +181,12 @@ async def on_ready():
         type=discord.ActivityType.watching, 
         name="Roblox accounts"
     ))
-    monitor_accounts.start()
+    
+    # Check if monitor_accounts task is already running
+    if not monitor_accounts.is_running():
+        monitor_accounts.start()
+    else:
+        logger.info("Monitor task already running")
 
 @bot.command(name='panel_help')
 async def panel_help_command(ctx):
